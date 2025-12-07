@@ -1,0 +1,1718 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>어빌리티 스톤 세공 시뮬레이터</title>
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&family=Noto+Sans+KR:wght@300;400;500;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-dark: #0a0a12;
+            --bg-card: rgba(15, 15, 25, 0.95);
+            --gold: #d4af37;
+            --gold-light: #f4d03f;
+            --gold-dark: #9a7b0a;
+            --blue: #4a90d9;
+            --blue-light: #6bb3f8;
+            --red: #c0392b;
+            --red-light: #e74c3c;
+            --green: #27ae60;
+            --green-light: #2ecc71;
+            --purple: #9b59b6;
+            --purple-light: #bb6bd9;
+            --text: #e8e8f0;
+            --text-dim: #8888a0;
+            --border: rgba(212, 175, 55, 0.3);
+            --success-glow: rgba(39, 174, 96, 0.6);
+            --fail-glow: rgba(192, 57, 43, 0.6);
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: 'Noto Sans KR', sans-serif;
+            background: var(--bg-dark);
+            min-height: 100vh;
+            color: var(--text);
+            overflow-x: hidden;
+        }
+
+        .bg-effects {
+            position: fixed;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        .bg-effects::before {
+            content: '';
+            position: absolute;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            background: 
+                radial-gradient(ellipse at 20% 20%, rgba(74, 144, 217, 0.15) 0%, transparent 50%),
+                radial-gradient(ellipse at 80% 80%, rgba(212, 175, 55, 0.1) 0%, transparent 50%),
+                radial-gradient(ellipse at 50% 50%, rgba(15, 15, 25, 0.8) 0%, transparent 100%);
+        }
+
+        .container {
+            position: relative;
+            z-index: 1;
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 40px 20px;
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .title {
+            font-family: 'Cinzel', serif;
+            font-size: 2.5rem;
+            font-weight: 700;
+            background: linear-gradient(135deg, var(--gold-light), var(--gold), var(--gold-dark));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            letter-spacing: 3px;
+            margin-bottom: 8px;
+        }
+
+        .subtitle {
+            font-size: 0.9rem;
+            color: var(--text-dim);
+            letter-spacing: 2px;
+        }
+
+        /* 목표 설정 */
+        .goal-section {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+        }
+
+        .goal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+
+        .goal-title {
+            font-size: 0.85rem;
+            color: var(--gold-light);
+            text-transform: uppercase;
+            letter-spacing: 2px;
+        }
+
+        .goal-presets {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+
+        .preset-btn {
+            padding: 6px 12px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 6px;
+            background: rgba(255, 255, 255, 0.05);
+            color: var(--text-dim);
+            font-size: 0.8rem;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .preset-btn:hover {
+            border-color: var(--gold);
+            color: var(--text);
+        }
+
+        .preset-btn.active {
+            background: linear-gradient(135deg, var(--gold-dark), var(--gold));
+            border-color: var(--gold);
+            color: var(--bg-dark);
+            font-weight: 600;
+        }
+
+        .preset-btn.special {
+            background: linear-gradient(135deg, var(--purple), var(--purple-light));
+            border-color: var(--purple-light);
+            color: white;
+        }
+
+        .preset-btn.special.active {
+            box-shadow: 0 0 15px rgba(155, 89, 182, 0.5);
+        }
+
+        /* 유동 목표 표시 */
+        .flexible-goal-display {
+            display: none;
+            margin-top: 15px;
+            padding: 15px;
+            background: rgba(155, 89, 182, 0.1);
+            border: 1px solid var(--purple);
+            border-radius: 10px;
+        }
+
+        .flexible-goal-display.active {
+            display: block;
+        }
+
+        .flexible-title {
+            font-size: 0.8rem;
+            color: var(--purple-light);
+            margin-bottom: 12px;
+            text-align: center;
+            letter-spacing: 1px;
+        }
+
+        .flexible-options {
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+            flex-wrap: wrap;
+        }
+
+        .flex-option {
+            padding: 12px 20px;
+            background: rgba(0, 0, 0, 0.3);
+            border: 2px solid rgba(255, 255, 255, 0.1);
+            border-radius: 8px;
+            text-align: center;
+            transition: all 0.3s ease;
+            min-width: 120px;
+        }
+
+        .flex-option.current {
+            border-color: var(--green);
+            background: rgba(39, 174, 96, 0.15);
+            box-shadow: 0 0 15px rgba(39, 174, 96, 0.3);
+        }
+
+        .flex-option.possible {
+            border-color: var(--gold);
+            opacity: 0.8;
+        }
+
+        .flex-option.impossible {
+            border-color: var(--red);
+            opacity: 0.4;
+        }
+
+        .flex-option-name {
+            font-family: 'Cinzel', serif;
+            font-size: 1.3rem;
+            font-weight: 600;
+            margin-bottom: 4px;
+        }
+
+        .flex-option.current .flex-option-name { color: var(--green-light); }
+        .flex-option.possible .flex-option-name { color: var(--gold-light); }
+        .flex-option.impossible .flex-option-name { color: var(--red-light); text-decoration: line-through; }
+
+        .flex-option-status {
+            font-size: 0.7rem;
+            color: var(--text-dim);
+        }
+
+        .flex-option.current .flex-option-status { color: var(--green-light); }
+
+        /* 고정 목표 입력 */
+        .goal-inputs {
+            display: flex;
+            gap: 20px;
+            align-items: center;
+            justify-content: center;
+            flex-wrap: wrap;
+            margin-top: 15px;
+        }
+
+        .goal-inputs.hidden { display: none; }
+
+        .goal-input-group {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .goal-input-group label {
+            font-size: 0.8rem;
+            color: var(--text-dim);
+        }
+
+        .goal-input-group label.buff1 { color: var(--blue-light); }
+        .goal-input-group label.buff2 { color: var(--gold-light); }
+        .goal-input-group label.debuff { color: var(--red-light); }
+
+        .goal-input {
+            width: 60px;
+            padding: 8px 12px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 6px;
+            background: rgba(0, 0, 0, 0.3);
+            color: var(--text);
+            font-size: 1rem;
+            text-align: center;
+            font-family: 'Cinzel', serif;
+        }
+
+        .goal-input:focus {
+            outline: none;
+            border-color: var(--gold);
+        }
+
+        .goal-separator {
+            font-size: 1.2rem;
+            color: var(--text-dim);
+        }
+
+        .goal-probability {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 15px;
+            margin-top: 15px;
+            padding-top: 15px;
+            border-top: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        .goal-prob-label {
+            font-size: 0.8rem;
+            color: var(--text-dim);
+        }
+
+        .goal-prob-value {
+            font-family: 'Cinzel', serif;
+            font-size: 1.5rem;
+            font-weight: 600;
+        }
+
+        .goal-prob-value.high { color: var(--green-light); }
+        .goal-prob-value.mid { color: var(--gold-light); }
+        .goal-prob-value.low { color: var(--red-light); }
+        .goal-prob-value.impossible { color: var(--text-dim); }
+
+        .goal-status {
+            font-size: 0.75rem;
+            padding: 4px 10px;
+            border-radius: 4px;
+            font-weight: 500;
+        }
+
+        .goal-status.achieved { background: rgba(39, 174, 96, 0.2); color: var(--green-light); }
+        .goal-status.possible { background: rgba(212, 175, 55, 0.2); color: var(--gold-light); }
+        .goal-status.failed { background: rgba(192, 57, 43, 0.2); color: var(--red-light); }
+
+        /* 메인 카드 */
+        .stone-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 30px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.05);
+        }
+
+        /* 확률 및 가이드 */
+        .probability-section {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 20px;
+            margin-bottom: 30px;
+            padding: 20px;
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 12px;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            flex-wrap: wrap;
+        }
+
+        .prob-display {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .prob-label {
+            font-size: 0.85rem;
+            color: var(--text-dim);
+            text-transform: uppercase;
+            letter-spacing: 2px;
+        }
+
+        .prob-value {
+            font-family: 'Cinzel', serif;
+            font-size: 2.5rem;
+            font-weight: 700;
+            transition: all 0.3s ease;
+        }
+
+        .prob-value.high { color: var(--green-light); text-shadow: 0 0 30px var(--success-glow); }
+        .prob-value.mid { color: var(--gold-light); text-shadow: 0 0 30px rgba(212, 175, 55, 0.5); }
+        .prob-value.low { color: var(--red-light); text-shadow: 0 0 30px var(--fail-glow); }
+
+        .prob-bar {
+            width: 150px;
+            height: 8px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 4px;
+            overflow: hidden;
+        }
+
+        .prob-bar-fill {
+            height: 100%;
+            border-radius: 4px;
+            transition: all 0.3s ease;
+        }
+
+        .prob-bar-fill.high { background: linear-gradient(90deg, var(--green), var(--green-light)); }
+        .prob-bar-fill.mid { background: linear-gradient(90deg, var(--gold-dark), var(--gold-light)); }
+        .prob-bar-fill.low { background: linear-gradient(90deg, var(--red), var(--red-light)); }
+
+        .guide-box {
+            flex: 1;
+            max-width: 400px;
+            padding: 15px 20px;
+            background: rgba(212, 175, 55, 0.1);
+            border: 1px solid var(--gold);
+            border-radius: 10px;
+            text-align: center;
+        }
+
+        .guide-box.success-guide { background: rgba(39, 174, 96, 0.1); border-color: var(--green); }
+        .guide-box.fail-guide { background: rgba(192, 57, 43, 0.1); border-color: var(--red); }
+        .guide-box.switch-guide { background: rgba(155, 89, 182, 0.1); border-color: var(--purple); }
+
+        .guide-label {
+            font-size: 0.7rem;
+            color: var(--text-dim);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 5px;
+        }
+
+        .guide-action {
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: var(--gold-light);
+        }
+
+        .guide-box.success-guide .guide-action { color: var(--green-light); }
+        .guide-box.fail-guide .guide-action { color: var(--red-light); }
+        .guide-box.switch-guide .guide-action { color: var(--purple-light); }
+
+        .guide-reason {
+            font-size: 0.75rem;
+            color: var(--text-dim);
+            margin-top: 5px;
+        }
+
+        .guide-target {
+            font-size: 0.7rem;
+            color: var(--purple-light);
+            margin-top: 8px;
+            padding-top: 8px;
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        /* 각인 라인 */
+        .engraving-lines {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .engraving-line {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            padding: 15px;
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 12px;
+            border: 2px solid transparent;
+            transition: all 0.3s ease;
+            position: relative;
+        }
+
+        .engraving-line:hover { background: rgba(0, 0, 0, 0.3); }
+
+        .engraving-line.recommended {
+            border-color: var(--gold);
+            box-shadow: 0 0 20px rgba(212, 175, 55, 0.3);
+        }
+
+        .engraving-line.buff1 .line-indicator { background: var(--blue); box-shadow: 0 0 15px rgba(74, 144, 217, 0.5); }
+        .engraving-line.buff2 .line-indicator { background: var(--gold); box-shadow: 0 0 15px rgba(212, 175, 55, 0.5); }
+        .engraving-line.debuff .line-indicator { background: var(--red); box-shadow: 0 0 15px rgba(192, 57, 43, 0.5); }
+
+        .line-indicator {
+            width: 4px;
+            height: 50px;
+            border-radius: 2px;
+        }
+
+        .line-info {
+            min-width: 140px;
+        }
+
+        .line-name {
+            font-size: 0.9rem;
+            font-weight: 500;
+            margin-bottom: 4px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .line-goal {
+            font-size: 0.7rem;
+            padding: 2px 6px;
+            border-radius: 3px;
+            background: rgba(255, 255, 255, 0.1);
+            color: var(--text-dim);
+        }
+
+        .line-goal.achieved { background: rgba(39, 174, 96, 0.3); color: var(--green-light); }
+        .line-goal.failed { background: rgba(192, 57, 43, 0.3); color: var(--red-light); }
+        .line-goal.flexible { background: rgba(155, 89, 182, 0.3); color: var(--purple-light); }
+
+        .line-level {
+            font-size: 0.75rem;
+            color: var(--text-dim);
+        }
+
+        .line-level span {
+            color: var(--gold-light);
+            font-weight: 600;
+        }
+
+        .slots-container {
+            display: flex;
+            gap: 6px;
+            flex: 1;
+        }
+
+        .slot {
+            width: 36px;
+            height: 36px;
+            background: rgba(255, 255, 255, 0.03);
+            border: 2px solid rgba(255, 255, 255, 0.1);
+            border-radius: 6px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s ease;
+            position: relative;
+        }
+
+        .slot.success {
+            background: linear-gradient(135deg, rgba(39, 174, 96, 0.3), rgba(46, 204, 113, 0.2));
+            border-color: var(--green);
+            box-shadow: 0 0 15px rgba(39, 174, 96, 0.4);
+        }
+
+        .slot.success::after {
+            content: '◆';
+            color: var(--green-light);
+            font-size: 16px;
+            text-shadow: 0 0 10px var(--green-light);
+        }
+
+        .slot.fail {
+            background: linear-gradient(135deg, rgba(192, 57, 43, 0.2), rgba(231, 76, 60, 0.1));
+            border-color: rgba(192, 57, 43, 0.5);
+        }
+
+        .slot.fail::after {
+            content: '✕';
+            color: var(--red);
+            font-size: 12px;
+            opacity: 0.6;
+        }
+
+        .slot.current {
+            border-color: var(--gold-light);
+            box-shadow: 0 0 20px rgba(212, 175, 55, 0.5);
+            animation: pulse 1.5s ease-in-out infinite;
+        }
+
+        .slot.goal-marker::before {
+            content: '';
+            position: absolute;
+            bottom: -6px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 0; height: 0;
+            border-left: 4px solid transparent;
+            border-right: 4px solid transparent;
+            border-bottom: 5px solid var(--gold);
+        }
+
+        .slot.goal-marker-alt::before {
+            border-bottom-color: var(--purple);
+        }
+
+        @keyframes pulse {
+            0%, 100% { box-shadow: 0 0 20px rgba(212, 175, 55, 0.3); }
+            50% { box-shadow: 0 0 30px rgba(212, 175, 55, 0.6); }
+        }
+
+        .craft-btn {
+            width: 50px;
+            height: 50px;
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+            font-size: 1.2rem;
+            transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .craft-btn:disabled { opacity: 0.3; cursor: not-allowed; }
+
+        .craft-btn.buff1 { background: linear-gradient(135deg, var(--blue), var(--blue-light)); box-shadow: 0 4px 15px rgba(74, 144, 217, 0.4); }
+        .craft-btn.buff2 { background: linear-gradient(135deg, var(--gold-dark), var(--gold)); box-shadow: 0 4px 15px rgba(212, 175, 55, 0.4); }
+        .craft-btn.debuff { background: linear-gradient(135deg, var(--red), var(--red-light)); box-shadow: 0 4px 15px rgba(192, 57, 43, 0.4); }
+
+        .craft-btn:not(:disabled):hover { transform: translateY(-2px); filter: brightness(1.1); }
+
+        .recommend-badge {
+            position: absolute;
+            top: -10px;
+            right: 60px;
+            background: var(--gold);
+            color: var(--bg-dark);
+            font-size: 0.65rem;
+            font-weight: 700;
+            padding: 3px 8px;
+            border-radius: 4px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            display: none;
+        }
+
+        .engraving-line.recommended .recommend-badge { display: block; }
+
+        /* 결과 */
+        .result-section {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 15px;
+            margin-bottom: 25px;
+            padding: 20px;
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 12px;
+        }
+
+        .result-item {
+            text-align: center;
+            padding: 15px;
+            background: rgba(255, 255, 255, 0.02);
+            border-radius: 8px;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        .result-label {
+            font-size: 0.75rem;
+            color: var(--text-dim);
+            margin-bottom: 8px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .result-value {
+            font-family: 'Cinzel', serif;
+            font-size: 1.8rem;
+            font-weight: 600;
+        }
+
+        .result-value.buff1 { color: var(--blue-light); }
+        .result-value.buff2 { color: var(--gold-light); }
+        .result-value.debuff { color: var(--red-light); }
+
+        .result-level {
+            font-size: 0.7rem;
+            color: var(--text-dim);
+            margin-top: 4px;
+        }
+
+        .result-level.active { color: var(--green-light); }
+
+        /* 컨트롤 */
+        .controls {
+            display: flex;
+            gap: 15px;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+
+        .control-btn {
+            padding: 12px 30px;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            background: rgba(255, 255, 255, 0.05);
+            color: var(--text);
+            font-family: 'Noto Sans KR', sans-serif;
+            font-size: 0.9rem;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .control-btn:hover { background: rgba(255, 255, 255, 0.1); border-color: var(--gold); }
+
+        .control-btn.primary {
+            background: linear-gradient(135deg, var(--gold-dark), var(--gold));
+            border-color: var(--gold);
+            color: var(--bg-dark);
+            font-weight: 600;
+        }
+
+        .control-btn.primary:hover { filter: brightness(1.1); }
+        .control-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+        /* 통계 */
+        .stats-section {
+            margin-top: 30px;
+            padding: 20px;
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 12px;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        .stats-title {
+            font-size: 0.8rem;
+            color: var(--text-dim);
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            margin-bottom: 15px;
+            text-align: center;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 15px;
+        }
+
+        .stat-item { text-align: center; }
+
+        .stat-value {
+            font-family: 'Cinzel', serif;
+            font-size: 1.5rem;
+            color: var(--gold-light);
+        }
+
+        .stat-label {
+            font-size: 0.7rem;
+            color: var(--text-dim);
+            margin-top: 4px;
+        }
+
+        /* 완료 */
+        .stone-card.completed {
+            border-color: var(--gold);
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5), 0 0 40px rgba(212, 175, 55, 0.2);
+        }
+
+        .completion-message {
+            display: none;
+            text-align: center;
+            padding: 20px;
+            margin-bottom: 20px;
+            background: linear-gradient(135deg, rgba(212, 175, 55, 0.1), rgba(212, 175, 55, 0.05));
+            border: 1px solid var(--gold);
+            border-radius: 12px;
+        }
+
+        .stone-card.completed .completion-message { display: block; }
+
+        .completion-title {
+            font-family: 'Cinzel', serif;
+            font-size: 1.5rem;
+            color: var(--gold-light);
+            margin-bottom: 8px;
+        }
+
+        .completion-result {
+            font-size: 0.9rem;
+            color: var(--text);
+        }
+
+        .completion-status {
+            margin-top: 10px;
+            font-size: 0.85rem;
+            font-weight: 600;
+        }
+
+        .completion-status.success { color: var(--green-light); }
+        .completion-status.fail { color: var(--red-light); }
+
+        .slot.animating { animation: craftResult 0.5s ease; }
+
+        @keyframes craftResult {
+            0% { transform: scale(1); }
+            30% { transform: scale(1.3); }
+            100% { transform: scale(1); }
+        }
+
+        .keyboard-hints {
+            text-align: center;
+            margin-top: 20px;
+            font-size: 0.75rem;
+            color: var(--text-dim);
+        }
+
+        .keyboard-hints kbd {
+            display: inline-block;
+            padding: 2px 6px;
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 4px;
+            margin: 0 3px;
+        }
+
+        /* 반응형 */
+        @media (max-width: 768px) {
+            .title { font-size: 1.8rem; }
+            .prob-value { font-size: 2rem; }
+            .probability-section { flex-direction: column; gap: 15px; }
+            .prob-bar { width: 120px; }
+            .guide-box { max-width: 100%; }
+            .engraving-line { flex-wrap: wrap; }
+            .slots-container { order: 3; width: 100%; justify-content: center; margin-top: 10px; }
+            .slot { width: 28px; height: 28px; }
+            .craft-btn { width: 40px; height: 40px; font-size: 1rem; }
+            .stats-grid { grid-template-columns: repeat(2, 1fr); }
+            .result-section { grid-template-columns: 1fr; }
+            .goal-inputs { flex-direction: column; }
+            .goal-presets { justify-content: center; }
+            .flexible-options { flex-direction: column; align-items: center; }
+        }
+    </style>
+</head>
+<body>
+    <div class="bg-effects"></div>
+    
+    <div class="container">
+        <header>
+            <h1 class="title">ABILITY STONE</h1>
+            <p class="subtitle">세공 시뮬레이터 + 스마트 가이드</p>
+        </header>
+
+        <!-- 목표 설정 -->
+        <div class="goal-section">
+            <div class="goal-header">
+                <div class="goal-title">🎯 목표 설정</div>
+                <div class="goal-presets">
+                    <button class="preset-btn" onclick="setPreset('77')">7/7</button>
+                    <button class="preset-btn special active" onclick="setPreset('97-106')">9/7 ↔ 10/6</button>
+                    <button class="preset-btn" onclick="setPreset('97')">9/7</button>
+                    <button class="preset-btn" onclick="setPreset('99')">9/9</button>
+                    <button class="preset-btn" onclick="setPreset('custom')">직접입력</button>
+                </div>
+            </div>
+
+            <!-- 유동 목표 표시 (9/7 ↔ 10/6) -->
+            <div class="flexible-goal-display active" id="flexibleDisplay">
+                <div class="flexible-title">🔄 유동 목표 모드 - 상황에 따라 자동 전환</div>
+                <div class="flexible-options">
+                    <div class="flex-option current" id="opt97">
+                        <div class="flex-option-name">9 / 7</div>
+                        <div class="flex-option-status" id="opt97Status">현재 목표</div>
+                    </div>
+                    <div class="flex-option possible" id="opt106">
+                        <div class="flex-option-name">10 / 6</div>
+                        <div class="flex-option-status" id="opt106Status">전환 가능</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 고정 목표 입력 -->
+            <div class="goal-inputs hidden" id="customInputs">
+                <div class="goal-input-group">
+                    <label class="buff1">증가1</label>
+                    <input type="number" class="goal-input" id="goal0" min="0" max="10" value="9" onchange="updateGoal()">
+                </div>
+                <span class="goal-separator">/</span>
+                <div class="goal-input-group">
+                    <label class="buff2">증가2</label>
+                    <input type="number" class="goal-input" id="goal1" min="0" max="10" value="7" onchange="updateGoal()">
+                </div>
+                <span class="goal-separator">/</span>
+                <div class="goal-input-group">
+                    <label class="debuff">감소 ≤</label>
+                    <input type="number" class="goal-input" id="goal2" min="0" max="10" value="4" onchange="updateGoal()">
+                </div>
+            </div>
+
+            <div class="goal-probability">
+                <span class="goal-prob-label">목표 달성 확률:</span>
+                <span class="goal-prob-value mid" id="goalProbValue">계산중...</span>
+                <span class="goal-status possible" id="goalStatus">진행중</span>
+            </div>
+        </div>
+
+        <div class="stone-card" id="stoneCard">
+            <div class="completion-message">
+                <div class="completion-title">✦ 세공 완료 ✦</div>
+                <div class="completion-result" id="completionResult"></div>
+                <div class="completion-status" id="completionStatus"></div>
+            </div>
+
+            <div class="probability-section">
+                <div class="prob-display">
+                    <div>
+                        <div class="prob-label">성공 확률</div>
+                        <div class="prob-value high" id="probValue">75%</div>
+                    </div>
+                    <div>
+                        <div class="prob-bar">
+                            <div class="prob-bar-fill high" id="probBar" style="width: 75%"></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="guide-box" id="guideBox">
+                    <div class="guide-label">💡 추천 행동</div>
+                    <div class="guide-action" id="guideAction">증가 효과 1 세공</div>
+                    <div class="guide-reason" id="guideReason">높은 확률에서 버프 적재</div>
+                    <div class="guide-target" id="guideTarget">현재 목표: 9/7</div>
+                </div>
+            </div>
+
+            <div class="engraving-lines">
+                <div class="engraving-line buff1" id="line0">
+                    <div class="line-indicator"></div>
+                    <div class="line-info">
+                        <div class="line-name">
+                            증가 효과 1
+                            <span class="line-goal flexible" id="lineGoal0">목표: 9 (↔10)</span>
+                        </div>
+                        <div class="line-level">Lv.<span id="level0">0</span></div>
+                    </div>
+                    <div class="slots-container" id="slots0"></div>
+                    <button class="craft-btn buff1" onclick="craft(0)" id="btn0">⚒</button>
+                    <div class="recommend-badge">추천</div>
+                </div>
+
+                <div class="engraving-line buff2" id="line1">
+                    <div class="line-indicator"></div>
+                    <div class="line-info">
+                        <div class="line-name">
+                            증가 효과 2
+                            <span class="line-goal flexible" id="lineGoal1">목표: 7 (↔6)</span>
+                        </div>
+                        <div class="line-level">Lv.<span id="level1">0</span></div>
+                    </div>
+                    <div class="slots-container" id="slots1"></div>
+                    <button class="craft-btn buff2" onclick="craft(1)" id="btn1">⚒</button>
+                    <div class="recommend-badge">추천</div>
+                </div>
+
+                <div class="engraving-line debuff" id="line2">
+                    <div class="line-indicator"></div>
+                    <div class="line-info">
+                        <div class="line-name">
+                            감소 효과
+                            <span class="line-goal" id="lineGoal2">목표: ≤4</span>
+                        </div>
+                        <div class="line-level">Lv.<span id="level2">0</span></div>
+                    </div>
+                    <div class="slots-container" id="slots2"></div>
+                    <button class="craft-btn debuff" onclick="craft(2)" id="btn2">⚒</button>
+                    <div class="recommend-badge">추천</div>
+                </div>
+            </div>
+
+            <div class="result-section">
+                <div class="result-item">
+                    <div class="result-label">증가 효과 1</div>
+                    <div class="result-value buff1" id="result0">0</div>
+                    <div class="result-level" id="resultLevel0">-</div>
+                </div>
+                <div class="result-item">
+                    <div class="result-label">증가 효과 2</div>
+                    <div class="result-value buff2" id="result1">0</div>
+                    <div class="result-level" id="resultLevel1">-</div>
+                </div>
+                <div class="result-item">
+                    <div class="result-label">감소 효과</div>
+                    <div class="result-value debuff" id="result2">0</div>
+                    <div class="result-level" id="resultLevel2">-</div>
+                </div>
+            </div>
+
+            <div class="controls">
+                <button class="control-btn" onclick="resetStone()">🔄 초기화</button>
+                <button class="control-btn primary" onclick="autoRecommend()" id="recommendBtn">▶ 추천대로 세공</button>
+            </div>
+
+            <div class="stats-section">
+                <div class="stats-title">세공 통계</div>
+                <div class="stats-grid">
+                    <div class="stat-item">
+                        <div class="stat-value" id="totalCrafts">0</div>
+                        <div class="stat-label">총 세공</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-value" id="totalSuccess">0</div>
+                        <div class="stat-label">성공</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-value" id="totalFail">0</div>
+                        <div class="stat-label">실패</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-value" id="successRate">0%</div>
+                        <div class="stat-label">성공률</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="keyboard-hints">
+                <kbd>1</kbd><kbd>2</kbd><kbd>3</kbd> 각 라인 세공 | 
+                <kbd>Space</kbd> 추천 세공 | 
+                <kbd>R</kbd> 초기화
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const MAX_SLOTS = 10;
+        const MAX_PROB = 75;
+        const MIN_PROB = 25;
+        const PROB_CHANGE = 10;
+
+        const state = {
+            probability: 75,
+            slots: [Array(10).fill(null), Array(10).fill(null), Array(10).fill(null)],
+            currentSlot: [0, 0, 0],
+            success: [0, 0, 0],
+            completed: false,
+            mode: 'flexible', // 'flexible' | 'fixed'
+            flexibleTarget: '97', // '97' | '106' - 현재 추구 중인 목표
+            goals: [9, 7, 4],
+            debuffGoal: 4,
+            stats: { total: 0, success: 0, fail: 0 }
+        };
+
+        // 레벨 계산
+        function getBuffLevel(count) {
+            if (count >= 10) return 4;
+            if (count >= 9) return 3;
+            if (count >= 7) return 2;
+            if (count >= 6) return 1;
+            return 0;
+        }
+
+        function getDebuffLevel(count) {
+            if (count >= 10) return 3;
+            if (count >= 7) return 2;
+            if (count >= 5) return 1;
+            return 0;
+        }
+
+        function getLevelText(level, isDebuff = false) {
+            if (level === 0) return '-';
+            if (isDebuff) return `${level}단계 페널티`;
+            const effects = ['3.00%', '3.75%', '5.25%', '6.00%'];
+            return `Lv.${level} (+${effects[level - 1]})`;
+        }
+
+        // 목표 달성 가능 여부 체크
+        function canAchieve(target) {
+            const remaining = [
+                MAX_SLOTS - state.currentSlot[0],
+                MAX_SLOTS - state.currentSlot[1],
+                MAX_SLOTS - state.currentSlot[2]
+            ];
+            
+            let g0, g1;
+            if (target === '97') {
+                g0 = 9; g1 = 7;
+            } else if (target === '106') {
+                g0 = 10; g1 = 6;
+            } else if (target === '79') {
+                g0 = 7; g1 = 9;
+            } else if (target === '610') {
+                g0 = 6; g1 = 10;
+            }
+
+            const need0 = Math.max(0, g0 - state.success[0]);
+            const need1 = Math.max(0, g1 - state.success[1]);
+            const debuffOk = state.success[2] <= state.debuffGoal;
+
+            return need0 <= remaining[0] && need1 <= remaining[1] && debuffOk;
+        }
+
+        // 목표 이미 달성했는지 체크
+        function isAchieved(target) {
+            let g0, g1;
+            if (target === '97') { g0 = 9; g1 = 7; }
+            else if (target === '106') { g0 = 10; g1 = 6; }
+            else if (target === '79') { g0 = 7; g1 = 9; }
+            else if (target === '610') { g0 = 6; g1 = 10; }
+
+            return state.success[0] >= g0 && state.success[1] >= g1 && state.success[2] <= state.debuffGoal;
+        }
+
+        // 유동 목표 최적 선택
+        function getFlexibleTargets() {
+            // 가능한 목표들 체크 (양방향)
+            const targets = [
+                { id: '97', g0: 9, g1: 7, possible: canAchieve('97'), achieved: isAchieved('97') },
+                { id: '106', g0: 10, g1: 6, possible: canAchieve('106'), achieved: isAchieved('106') },
+                { id: '79', g0: 7, g1: 9, possible: canAchieve('79'), achieved: isAchieved('79') },
+                { id: '610', g0: 6, g1: 10, possible: canAchieve('610'), achieved: isAchieved('610') }
+            ];
+
+            // 달성한 것이 있으면 그것 반환
+            const achieved = targets.find(t => t.achieved);
+            if (achieved) return { current: achieved, all: targets };
+
+            // 가능한 것들 중 선택
+            const possible = targets.filter(t => t.possible);
+            
+            if (possible.length === 0) {
+                return { current: null, all: targets };
+            }
+
+            // 현재 진행 상황에 따라 최적 목표 선택
+            // 버프1이 더 많이 진행됐으면 9/7 또는 10/6 우선
+            // 버프2가 더 많이 진행됐으면 7/9 또는 6/10 우선
+            const diff = state.success[0] - state.success[1];
+            
+            let best;
+            if (diff >= 2) {
+                // 버프1이 훨씬 앞서면 10/6 > 9/7 순서로 체크
+                best = possible.find(t => t.id === '106') || possible.find(t => t.id === '97') || possible[0];
+            } else if (diff <= -2) {
+                // 버프2가 훨씬 앞서면 6/10 > 7/9 순서로 체크
+                best = possible.find(t => t.id === '610') || possible.find(t => t.id === '79') || possible[0];
+            } else if (diff > 0) {
+                // 버프1이 약간 앞서면 9/7 우선
+                best = possible.find(t => t.id === '97') || possible.find(t => t.id === '106') || possible[0];
+            } else if (diff < 0) {
+                // 버프2가 약간 앞서면 7/9 우선
+                best = possible.find(t => t.id === '79') || possible.find(t => t.id === '610') || possible[0];
+            } else {
+                // 동일하면 9/7 기본
+                best = possible.find(t => t.id === '97') || possible[0];
+            }
+
+            return { current: best, all: targets };
+        }
+
+        // 프리셋 설정
+        function setPreset(preset) {
+            document.querySelectorAll('.preset-btn').forEach(btn => btn.classList.remove('active'));
+            event.target.classList.add('active');
+
+            const flexDisplay = document.getElementById('flexibleDisplay');
+            const customInputs = document.getElementById('customInputs');
+
+            if (preset === '97-106') {
+                state.mode = 'flexible';
+                state.debuffGoal = 4;
+                flexDisplay.classList.add('active');
+                customInputs.classList.add('hidden');
+            } else if (preset === 'custom') {
+                state.mode = 'fixed';
+                flexDisplay.classList.remove('active');
+                customInputs.classList.remove('hidden');
+                updateGoal();
+            } else {
+                state.mode = 'fixed';
+                flexDisplay.classList.remove('active');
+                customInputs.classList.add('hidden');
+                
+                const presets = {
+                    '77': [7, 7, 4],
+                    '97': [9, 7, 4],
+                    '99': [9, 9, 4]
+                };
+                state.goals = presets[preset] || [9, 7, 4];
+                state.debuffGoal = state.goals[2];
+            }
+
+            updateAll();
+        }
+
+        // 고정 목표 업데이트
+        function updateGoal() {
+            if (state.mode !== 'fixed') return;
+            state.goals = [
+                parseInt(document.getElementById('goal0').value) || 0,
+                parseInt(document.getElementById('goal1').value) || 0,
+                parseInt(document.getElementById('goal2').value) || 0
+            ];
+            state.debuffGoal = state.goals[2];
+            updateAll();
+        }
+
+        // 슬롯 초기화
+        function initSlots() {
+            for (let line = 0; line < 3; line++) {
+                const container = document.getElementById(`slots${line}`);
+                container.innerHTML = '';
+                for (let i = 0; i < MAX_SLOTS; i++) {
+                    const slot = document.createElement('div');
+                    slot.className = 'slot';
+                    slot.id = `slot-${line}-${i}`;
+                    if (i === 0) slot.classList.add('current');
+                    container.appendChild(slot);
+                }
+            }
+        }
+
+        // 확률 UI 업데이트
+        function updateProbability() {
+            const probValue = document.getElementById('probValue');
+            const probBar = document.getElementById('probBar');
+            
+            probValue.textContent = `${state.probability}%`;
+            probBar.style.width = `${state.probability}%`;
+            
+            probValue.className = 'prob-value';
+            probBar.className = 'prob-bar-fill';
+            
+            if (state.probability >= 55) {
+                probValue.classList.add('high');
+                probBar.classList.add('high');
+            } else if (state.probability >= 35) {
+                probValue.classList.add('mid');
+                probBar.classList.add('mid');
+            } else {
+                probValue.classList.add('low');
+                probBar.classList.add('low');
+            }
+        }
+
+        // 결과 UI 업데이트
+        function updateResults() {
+            for (let line = 0; line < 3; line++) {
+                const isDebuff = line === 2;
+                const level = isDebuff ? getDebuffLevel(state.success[line]) : getBuffLevel(state.success[line]);
+                
+                document.getElementById(`result${line}`).textContent = state.success[line];
+                document.getElementById(`level${line}`).textContent = level;
+                
+                const levelEl = document.getElementById(`resultLevel${line}`);
+                levelEl.textContent = getLevelText(level, isDebuff);
+                levelEl.className = 'result-level' + (level > 0 ? ' active' : '');
+            }
+
+            document.getElementById('totalCrafts').textContent = state.stats.total;
+            document.getElementById('totalSuccess').textContent = state.stats.success;
+            document.getElementById('totalFail').textContent = state.stats.fail;
+            document.getElementById('successRate').textContent = 
+                state.stats.total > 0 ? `${Math.round(state.stats.success / state.stats.total * 100)}%` : '0%';
+        }
+
+        // 유동 목표 UI 업데이트
+        function updateFlexibleDisplay() {
+            if (state.mode !== 'flexible') return;
+
+            const flex = getFlexibleTargets();
+            
+            // 97 옵션
+            const opt97El = document.getElementById('opt97');
+            const opt97Status = document.getElementById('opt97Status');
+            const t97 = flex.all.find(t => t.id === '97' || t.id === '79');
+            
+            // 106 옵션
+            const opt106El = document.getElementById('opt106');
+            const opt106Status = document.getElementById('opt106Status');
+            const t106 = flex.all.find(t => t.id === '106' || t.id === '610');
+
+            // 9/7 계열 상태
+            const any97 = flex.all.find(t => (t.id === '97' || t.id === '79') && t.possible);
+            const achieved97 = flex.all.find(t => (t.id === '97' || t.id === '79') && t.achieved);
+            
+            // 10/6 계열 상태
+            const any106 = flex.all.find(t => (t.id === '106' || t.id === '610') && t.possible);
+            const achieved106 = flex.all.find(t => (t.id === '106' || t.id === '610') && t.achieved);
+
+            // 현재 목표가 97계열인지 106계열인지
+            const currentIs97 = flex.current && (flex.current.id === '97' || flex.current.id === '79');
+            const currentIs106 = flex.current && (flex.current.id === '106' || flex.current.id === '610');
+
+            // 9/7 표시 업데이트
+            opt97El.className = 'flex-option';
+            if (achieved97) {
+                opt97El.classList.add('current');
+                opt97Status.textContent = '🎉 달성!';
+                opt97El.querySelector('.flex-option-name').textContent = achieved97.id === '79' ? '7 / 9' : '9 / 7';
+            } else if (currentIs97) {
+                opt97El.classList.add('current');
+                opt97Status.textContent = '▶ 현재 목표';
+                opt97El.querySelector('.flex-option-name').textContent = flex.current.id === '79' ? '7 / 9' : '9 / 7';
+            } else if (any97) {
+                opt97El.classList.add('possible');
+                opt97Status.textContent = '전환 가능';
+                opt97El.querySelector('.flex-option-name').textContent = '9 / 7';
+            } else {
+                opt97El.classList.add('impossible');
+                opt97Status.textContent = '달성 불가';
+                opt97El.querySelector('.flex-option-name').textContent = '9 / 7';
+            }
+
+            // 10/6 표시 업데이트
+            opt106El.className = 'flex-option';
+            if (achieved106) {
+                opt106El.classList.add('current');
+                opt106Status.textContent = '🎉 달성!';
+                opt106El.querySelector('.flex-option-name').textContent = achieved106.id === '610' ? '6 / 10' : '10 / 6';
+            } else if (currentIs106) {
+                opt106El.classList.add('current');
+                opt106Status.textContent = '▶ 현재 목표';
+                opt106El.querySelector('.flex-option-name').textContent = flex.current.id === '610' ? '6 / 10' : '10 / 6';
+            } else if (any106) {
+                opt106El.classList.add('possible');
+                opt106Status.textContent = '전환 가능';
+                opt106El.querySelector('.flex-option-name').textContent = '10 / 6';
+            } else {
+                opt106El.classList.add('impossible');
+                opt106Status.textContent = '달성 불가';
+                opt106El.querySelector('.flex-option-name').textContent = '10 / 6';
+            }
+
+            // 라인 목표 표시 업데이트
+            if (flex.current) {
+                const g0 = flex.current.g0;
+                const g1 = flex.current.g1;
+                document.getElementById('lineGoal0').textContent = `목표: ${g0}`;
+                document.getElementById('lineGoal1').textContent = `목표: ${g1}`;
+            }
+        }
+
+        // 스마트 추천
+        function getSmartRecommendation() {
+            if (state.completed) return { line: -1, reason: '', target: '' };
+
+            const remaining = [
+                MAX_SLOTS - state.currentSlot[0],
+                MAX_SLOTS - state.currentSlot[1],
+                MAX_SLOTS - state.currentSlot[2]
+            ];
+
+            let g0, g1, targetName;
+
+            if (state.mode === 'flexible') {
+                const flex = getFlexibleTargets();
+                if (!flex.current) {
+                    // 모든 목표 달성 불가
+                    for (let i = 0; i < 3; i++) {
+                        if (remaining[i] > 0) return { line: i, reason: '남은 슬롯 소진', target: '목표 달성 불가' };
+                    }
+                    return { line: -1, reason: '', target: '' };
+                }
+                g0 = flex.current.g0;
+                g1 = flex.current.g1;
+                
+                // 목표 이름
+                if (flex.current.id === '97') targetName = '9/7';
+                else if (flex.current.id === '79') targetName = '7/9';
+                else if (flex.current.id === '106') targetName = '10/6';
+                else if (flex.current.id === '610') targetName = '6/10';
+            } else {
+                g0 = state.goals[0];
+                g1 = state.goals[1];
+                targetName = `${g0}/${g1}`;
+            }
+
+            const need0 = Math.max(0, g0 - state.success[0]);
+            const need1 = Math.max(0, g1 - state.success[1]);
+            const debuffAllowed = state.debuffGoal - state.success[2];
+
+            const buff0Done = state.success[0] >= g0;
+            const buff1Done = state.success[1] >= g1;
+
+            // 높은 확률 (55% 이상)
+            if (state.probability >= 55) {
+                if (!buff0Done && remaining[0] > 0) {
+                    const urgency0 = need0 / remaining[0];
+                    const urgency1 = buff1Done ? 0 : (need1 / remaining[1]);
+                    
+                    if (urgency0 >= urgency1 || buff1Done) {
+                        return { line: 0, reason: `목표까지 ${need0}칸 필요`, target: targetName };
+                    }
+                }
+                if (!buff1Done && remaining[1] > 0) {
+                    return { line: 1, reason: `목표까지 ${need1}칸 필요`, target: targetName };
+                }
+                if (remaining[2] > 0) {
+                    return { line: 2, reason: '버프 목표 달성, 디버프 소진', target: targetName };
+                }
+            }
+            // 낮은 확률 (55% 미만)
+            else {
+                if (remaining[2] > 0 && debuffAllowed > 0) {
+                    return { line: 2, reason: `실패 기대 (허용: ${debuffAllowed}칸)`, target: targetName };
+                }
+                if (!buff0Done && remaining[0] > 0) {
+                    return { line: 0, reason: '디버프 한도 도달', target: targetName };
+                }
+                if (!buff1Done && remaining[1] > 0) {
+                    return { line: 1, reason: '디버프 한도 도달', target: targetName };
+                }
+                if (remaining[2] > 0) {
+                    return { line: 2, reason: '남은 디버프 소진', target: targetName };
+                }
+            }
+
+            for (let i = 0; i < 3; i++) {
+                if (remaining[i] > 0) return { line: i, reason: '남은 슬롯', target: targetName };
+            }
+
+            return { line: -1, reason: '', target: '' };
+        }
+
+        // 추천 UI 업데이트
+        function updateRecommendation() {
+            document.querySelectorAll('.engraving-line').forEach(el => el.classList.remove('recommended'));
+
+            const guideBox = document.getElementById('guideBox');
+            const guideAction = document.getElementById('guideAction');
+            const guideReason = document.getElementById('guideReason');
+            const guideTarget = document.getElementById('guideTarget');
+
+            if (state.completed) {
+                guideBox.className = 'guide-box';
+                guideAction.textContent = '세공 완료';
+                guideReason.textContent = '';
+                guideTarget.textContent = '';
+                return;
+            }
+
+            const rec = getSmartRecommendation();
+            
+            if (rec.line >= 0 && state.currentSlot[rec.line] < MAX_SLOTS) {
+                document.getElementById(`line${rec.line}`).classList.add('recommended');
+                
+                const lineNames = ['증가 효과 1', '증가 효과 2', '감소 효과'];
+                guideAction.textContent = `${lineNames[rec.line]} 세공`;
+                guideReason.textContent = rec.reason;
+                guideTarget.textContent = `현재 목표: ${rec.target}`;
+
+                guideBox.className = 'guide-box';
+                if (state.probability >= 55 && rec.line < 2) {
+                    guideBox.classList.add('success-guide');
+                } else if (state.probability < 55 && rec.line === 2) {
+                    guideBox.classList.add('fail-guide');
+                }
+
+                // 목표 전환 발생 시
+                if (state.mode === 'flexible') {
+                    const flex = getFlexibleTargets();
+                    if (flex.current) {
+                        const wasTarget = state.flexibleTarget;
+                        const newTarget = flex.current.id;
+                        if (wasTarget !== newTarget) {
+                            guideBox.classList.add('switch-guide');
+                            state.flexibleTarget = newTarget;
+                        }
+                    }
+                }
+            }
+
+            updateGoalStatus();
+        }
+
+        // 목표 상태 업데이트
+        function updateGoalStatus() {
+            const goalProbEl = document.getElementById('goalProbValue');
+            const goalStatusEl = document.getElementById('goalStatus');
+
+            if (state.mode === 'flexible') {
+                const flex = getFlexibleTargets();
+                const anyAchieved = flex.all.some(t => t.achieved);
+                const anyPossible = flex.all.some(t => t.possible);
+
+                if (state.completed) {
+                    if (anyAchieved) {
+                        goalProbEl.textContent = '100%';
+                        goalProbEl.className = 'goal-prob-value high';
+                        goalStatusEl.textContent = '🎉 목표 달성!';
+                        goalStatusEl.className = 'goal-status achieved';
+                    } else {
+                        goalProbEl.textContent = '0%';
+                        goalProbEl.className = 'goal-prob-value low';
+                        goalStatusEl.textContent = '❌ 목표 실패';
+                        goalStatusEl.className = 'goal-status failed';
+                    }
+                } else if (!anyPossible) {
+                    goalProbEl.textContent = '0%';
+                    goalProbEl.className = 'goal-prob-value impossible';
+                    goalStatusEl.textContent = '달성 불가';
+                    goalStatusEl.className = 'goal-status failed';
+                } else {
+                    goalProbEl.textContent = '진행중';
+                    goalProbEl.className = 'goal-prob-value mid';
+                    goalStatusEl.textContent = '진행중';
+                    goalStatusEl.className = 'goal-status possible';
+                }
+            } else {
+                // 고정 목표 모드
+                const achieved = state.success[0] >= state.goals[0] && 
+                                state.success[1] >= state.goals[1] && 
+                                state.success[2] <= state.goals[2];
+                const remaining = [
+                    MAX_SLOTS - state.currentSlot[0],
+                    MAX_SLOTS - state.currentSlot[1]
+                ];
+                const need0 = Math.max(0, state.goals[0] - state.success[0]);
+                const need1 = Math.max(0, state.goals[1] - state.success[1]);
+                const possible = need0 <= remaining[0] && need1 <= remaining[1] && state.success[2] <= state.goals[2];
+
+                if (state.completed) {
+                    if (achieved) {
+                        goalProbEl.textContent = '100%';
+                        goalProbEl.className = 'goal-prob-value high';
+                        goalStatusEl.textContent = '🎉 목표 달성!';
+                        goalStatusEl.className = 'goal-status achieved';
+                    } else {
+                        goalProbEl.textContent = '0%';
+                        goalProbEl.className = 'goal-prob-value low';
+                        goalStatusEl.textContent = '❌ 목표 실패';
+                        goalStatusEl.className = 'goal-status failed';
+                    }
+                } else if (!possible) {
+                    goalProbEl.textContent = '0%';
+                    goalProbEl.className = 'goal-prob-value impossible';
+                    goalStatusEl.textContent = '달성 불가';
+                    goalStatusEl.className = 'goal-status failed';
+                } else {
+                    goalProbEl.textContent = '진행중';
+                    goalProbEl.className = 'goal-prob-value mid';
+                    goalStatusEl.textContent = '진행중';
+                    goalStatusEl.className = 'goal-status possible';
+                }
+            }
+
+            // 라인 목표 배지 업데이트
+            updateLineGoals();
+        }
+
+        // 라인별 목표 배지 업데이트
+        function updateLineGoals() {
+            let g0, g1;
+            
+            if (state.mode === 'flexible') {
+                const flex = getFlexibleTargets();
+                if (flex.current) {
+                    g0 = flex.current.g0;
+                    g1 = flex.current.g1;
+                } else {
+                    g0 = 9; g1 = 7; // 기본값
+                }
+            } else {
+                g0 = state.goals[0];
+                g1 = state.goals[1];
+            }
+
+            const remaining = [
+                MAX_SLOTS - state.currentSlot[0],
+                MAX_SLOTS - state.currentSlot[1],
+                MAX_SLOTS - state.currentSlot[2]
+            ];
+
+            // 버프 라인들
+            for (let i = 0; i < 2; i++) {
+                const goalEl = document.getElementById(`lineGoal${i}`);
+                const target = i === 0 ? g0 : g1;
+                
+                goalEl.classList.remove('achieved', 'failed', 'flexible');
+                
+                if (state.mode === 'flexible') {
+                    goalEl.classList.add('flexible');
+                }
+                
+                if (state.success[i] >= target) {
+                    goalEl.classList.add('achieved');
+                    goalEl.textContent = `✓ ${state.success[i]}/${target}`;
+                } else if (state.success[i] + remaining[i] < target) {
+                    goalEl.classList.add('failed');
+                    goalEl.textContent = `✗ 목표: ${target}`;
+                } else {
+                    goalEl.textContent = `목표: ${target}`;
+                }
+            }
+
+            // 디버프 라인
+            const debuffGoalEl = document.getElementById('lineGoal2');
+            debuffGoalEl.classList.remove('achieved', 'failed');
+            
+            if (state.success[2] > state.debuffGoal) {
+                debuffGoalEl.classList.add('failed');
+                debuffGoalEl.textContent = `✗ ${state.success[2]} > ${state.debuffGoal}`;
+            } else if (state.currentSlot[2] >= MAX_SLOTS) {
+                debuffGoalEl.classList.add('achieved');
+                debuffGoalEl.textContent = `✓ ${state.success[2]} ≤ ${state.debuffGoal}`;
+            } else {
+                debuffGoalEl.textContent = `목표: ≤${state.debuffGoal}`;
+            }
+        }
+
+        // 세공 실행
+        function craft(line) {
+            if (state.completed || state.currentSlot[line] >= MAX_SLOTS) return;
+
+            const slotIndex = state.currentSlot[line];
+            const slot = document.getElementById(`slot-${line}-${slotIndex}`);
+            
+            const roll = Math.random() * 100;
+            const success = roll < state.probability;
+
+            state.slots[line][slotIndex] = success;
+            if (success) {
+                state.success[line]++;
+                state.stats.success++;
+                slot.classList.add('success');
+            } else {
+                state.stats.fail++;
+                slot.classList.add('fail');
+            }
+
+            slot.classList.add('animating');
+            setTimeout(() => slot.classList.remove('animating'), 500);
+
+            slot.classList.remove('current', 'goal-marker', 'goal-marker-alt');
+            state.currentSlot[line]++;
+            state.stats.total++;
+
+            if (state.currentSlot[line] < MAX_SLOTS) {
+                document.getElementById(`slot-${line}-${state.currentSlot[line]}`).classList.add('current');
+            } else {
+                document.getElementById(`btn${line}`).disabled = true;
+            }
+
+            if (success) {
+                state.probability = Math.max(MIN_PROB, state.probability - PROB_CHANGE);
+            } else {
+                state.probability = Math.min(MAX_PROB, state.probability + PROB_CHANGE);
+            }
+
+            checkCompletion();
+            updateAll();
+        }
+
+        // 완료 체크
+        function checkCompletion() {
+            const allComplete = state.currentSlot.every(slot => slot >= MAX_SLOTS);
+            if (allComplete) {
+                state.completed = true;
+                document.getElementById('stoneCard').classList.add('completed');
+                document.getElementById('recommendBtn').disabled = true;
+                
+                const buff1Level = getBuffLevel(state.success[0]);
+                const buff2Level = getBuffLevel(state.success[1]);
+                const debuffLevel = getDebuffLevel(state.success[2]);
+                
+                let resultText = `${state.success[0]} / ${state.success[1]} / ${state.success[2]}`;
+                resultText += ` (Lv.${buff1Level} / Lv.${buff2Level} / ${debuffLevel}단계)`;
+                document.getElementById('completionResult').textContent = resultText;
+
+                let achieved = false;
+                let achievedTarget = '';
+
+                if (state.mode === 'flexible') {
+                    const flex = getFlexibleTargets();
+                    const achievedOne = flex.all.find(t => t.achieved);
+                    if (achievedOne) {
+                        achieved = true;
+                        if (achievedOne.id === '97') achievedTarget = '9/7';
+                        else if (achievedOne.id === '79') achievedTarget = '7/9';
+                        else if (achievedOne.id === '106') achievedTarget = '10/6';
+                        else if (achievedOne.id === '610') achievedTarget = '6/10';
+                    }
+                } else {
+                    achieved = state.success[0] >= state.goals[0] && 
+                              state.success[1] >= state.goals[1] && 
+                              state.success[2] <= state.goals[2];
+                    achievedTarget = `${state.goals[0]}/${state.goals[1]}`;
+                }
+                
+                const statusEl = document.getElementById('completionStatus');
+                if (achieved) {
+                    statusEl.textContent = `🎉 ${achievedTarget} 목표 달성!`;
+                    statusEl.className = 'completion-status success';
+                } else {
+                    statusEl.textContent = '목표 미달성';
+                    statusEl.className = 'completion-status fail';
+                }
+            }
+        }
+
+        // 추천대로 세공
+        function autoRecommend() {
+            if (state.completed) return;
+            const rec = getSmartRecommendation();
+            if (rec.line >= 0) craft(rec.line);
+        }
+
+        // 전체 UI 업데이트
+        function updateAll() {
+            updateProbability();
+            updateResults();
+            updateFlexibleDisplay();
+            updateRecommendation();
+        }
+
+        // 초기화
+        function resetStone() {
+            state.probability = 75;
+            state.slots = [Array(10).fill(null), Array(10).fill(null), Array(10).fill(null)];
+            state.currentSlot = [0, 0, 0];
+            state.success = [0, 0, 0];
+            state.completed = false;
+            state.flexibleTarget = '97';
+            state.stats = { total: 0, success: 0, fail: 0 };
+
+            document.getElementById('stoneCard').classList.remove('completed');
+            document.getElementById('recommendBtn').disabled = false;
+            
+            for (let i = 0; i < 3; i++) {
+                document.getElementById(`btn${i}`).disabled = false;
+            }
+
+            initSlots();
+            updateAll();
+        }
+
+        // 키보드
+        document.addEventListener('keydown', (e) => {
+            if (e.target.tagName === 'INPUT') return;
+            if (state.completed && e.key !== 'r' && e.key !== 'R') return;
+            
+            switch(e.key) {
+                case '1': craft(0); break;
+                case '2': craft(1); break;
+                case '3': craft(2); break;
+                case ' ':
+                case 'Enter':
+                    e.preventDefault();
+                    autoRecommend();
+                    break;
+                case 'r':
+                case 'R':
+                    resetStone();
+                    break;
+            }
+        });
+
+        // 초기 실행
+        initSlots();
+        updateAll();
+    </script>
+</body>
+</html>
